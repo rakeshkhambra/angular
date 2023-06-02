@@ -70,7 +70,7 @@ function baseDirectiveFields(
       'hostBindings',
       createHostBindingsFunction(
           meta.host, meta.typeSourceSpan, bindingParser, constantPool, meta.selector || '',
-          meta.name, definitionMap));
+          meta.name, meta.isSignal, definitionMap));
 
   // e.g 'inputs: {a: 'a'}`
   definitionMap.set('inputs', conditionallyCreateDirectiveBindingLiteral(meta.inputs, true));
@@ -236,7 +236,7 @@ export function compileComponentFromMetadata(
     // This path compiles the template using the prototype template pipeline. First the template is
     // ingested into IR:
     const tpl = ingestComponent(
-        meta.name, meta.template.nodes, constantPool, meta.relativeContextFilePath,
+        meta.name, meta.isSignal, meta.template.nodes, constantPool, meta.relativeContextFilePath,
         meta.i18nUseExternalIds);
 
     // Then the IR is transformed to prepare it for cod egeneration.
@@ -563,7 +563,7 @@ function createViewQueriesFunction(
 function createHostBindingsFunction(
     hostBindingsMetadata: R3HostMetadata, typeSourceSpan: ParseSourceSpan,
     bindingParser: BindingParser, constantPool: ConstantPool, selector: string, name: string,
-    definitionMap: DefinitionMap): o.Expression|null {
+    isSignal: boolean, definitionMap: DefinitionMap): o.Expression|null {
   const bindings =
       bindingParser.createBoundHostProperties(hostBindingsMetadata.properties, typeSourceSpan);
 
@@ -587,6 +587,7 @@ function createHostBindingsFunction(
 
     const hostJob = ingestHostBinding(
         {
+          isSignal,
           componentName: name,
           properties: bindings,
           events: eventBindings,

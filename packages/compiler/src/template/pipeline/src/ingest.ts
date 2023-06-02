@@ -13,10 +13,9 @@ import {splitNsName} from '../../../ml_parser/tags';
 import * as o from '../../../output/output_ast';
 import {ParseSourceSpan} from '../../../parse_util';
 import * as t from '../../../render3/r3_ast';
-import {BindingParser} from '../../../template_parser/binding_parser';
 import * as ir from '../ir';
 
-import {ComponentCompilationJob, HostBindingCompilationJob, type CompilationJob, type ViewCompilationUnit, HostBindingCompilationUnit} from './compilation';
+import {type CompilationJob, ComponentCompilationJob, HostBindingCompilationJob, type ViewCompilationUnit} from './compilation';
 import {BINARY_OPERATORS, namespaceForKey} from './conversion';
 
 const compatibilityMode = ir.CompatibilityMode.TemplateDefinitionBuilder;
@@ -26,15 +25,17 @@ const compatibilityMode = ir.CompatibilityMode.TemplateDefinitionBuilder;
  * representation.
  */
 export function ingestComponent(
-    componentName: string, template: t.Node[], constantPool: ConstantPool,
+    componentName: string, isSignal: boolean, template: t.Node[], constantPool: ConstantPool,
     relativeContextFilePath: string, i18nUseExternalIds: boolean): ComponentCompilationJob {
   const cpl = new ComponentCompilationJob(
-      componentName, constantPool, compatibilityMode, relativeContextFilePath, i18nUseExternalIds);
+      componentName, isSignal, constantPool, compatibilityMode, relativeContextFilePath,
+      i18nUseExternalIds);
   ingestNodes(cpl.root, template);
   return cpl;
 }
 
 export interface HostBindingInput {
+  isSignal: boolean;
   componentName: string;
   properties: e.ParsedProperty[]|null;
   attributes: {[key: string]: o.Expression};
@@ -46,9 +47,9 @@ export interface HostBindingInput {
  * representation.
  */
 export function ingestHostBinding(
-    input: HostBindingInput, bindingParser: BindingParser,
-    constantPool: ConstantPool): HostBindingCompilationJob {
-  const job = new HostBindingCompilationJob(input.componentName, constantPool, compatibilityMode);
+    input: HostBindingInput, constantPool: ConstantPool): HostBindingCompilationJob {
+  const job = new HostBindingCompilationJob(
+      input.componentName, input.isSignal, constantPool, compatibilityMode);
   for (const property of input.properties ?? []) {
     ingestHostProperty(job, property, false);
   }
@@ -82,8 +83,11 @@ export function ingestHostProperty(
   if (property.isAnimation) {
     bindingKind = ir.BindingKind.Animation;
   }
+
+  const bindingXref = job.allocateXrefId();
+  job.root.create.push(ir.createBindingSignalPlaceholderOp(bindingXref));
   job.root.update.push(ir.createBindingOp(
-      job.root.xref, bindingKind, property.name, expression, null,
+      bindingXref, job.root.xref, bindingKind, property.name, expression, null,
       SecurityContext
           .NONE /* TODO: what should we pass as security context? Passing NONE for now. */,
       isTextAttribute, false, property.sourceSpan));
@@ -91,8 +95,10 @@ export function ingestHostProperty(
 
 export function ingestHostAttribute(
     job: HostBindingCompilationJob, name: string, value: o.Expression): void {
+  const bindingXref = job.allocateXrefId();
   const attrBinding = ir.createBindingOp(
-      job.root.xref, ir.BindingKind.Attribute, name, value, null, SecurityContext.NONE, true, false,
+      bindingXref, job.root.xref, ir.BindingKind.Attribute, name, value, null, SecurityContext.NONE,
+      true, false,
       /* TODO: host attribute source spans */ null!);
   job.root.update.push(attrBinding);
 }
@@ -394,7 +400,7 @@ const BINDING_KINDS = new Map<e.BindingType, ir.BindingKind>([
 ]);
 
 function ingestBinding(
-    view: ViewCompilationUnit, xref: ir.XrefId, name: string, value: e.AST|o.Expression,
+    view: ViewCompilationUnit, targetXref: ir.XrefId, name: string, value: e.AST|o.Expression,
     type: e.BindingType, unit: string|null, securityContext: SecurityContext,
     sourceSpan: ParseSourceSpan, isTextAttribute: boolean, isTemplateBinding: boolean): void {
   if (value instanceof e.ASTWithSource) {
@@ -412,9 +418,12 @@ function ingestBinding(
   }
 
   const kind: ir.BindingKind = BINDING_KINDS.get(type)!;
+  const bindingXref = view.job.allocateXrefId();
+
+  view.create.push(ir.createBindingSignalPlaceholderOp(bindingXref));
   view.update.push(ir.createBindingOp(
-      xref, kind, name, expression, unit, securityContext, isTextAttribute, isTemplateBinding,
-      sourceSpan));
+      bindingXref, targetXref, kind, name, expression, unit, securityContext, isTextAttribute,
+      isTemplateBinding, sourceSpan));
 }
 
 /**

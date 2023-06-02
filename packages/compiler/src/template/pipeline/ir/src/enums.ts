@@ -101,6 +101,12 @@ export enum OpKind {
   Binding,
 
   /**
+   * A placeholder operation reserving space for `Binding` operations that end up being
+   * moved into the creation block phase for signal components.
+   */
+  BindingSignalPlaceholder,
+
+  /**
    * An operation to bind an expression to a property of an element.
    */
   Property,
@@ -174,6 +180,11 @@ export enum OpKind {
    * The end of an i18n block.
    */
   I18nEnd,
+
+  /*
+   * TODO
+   */
+  PropertyCreate,
 
   // TODO: Add Host Listeners, and possibly other host ops also.
 }

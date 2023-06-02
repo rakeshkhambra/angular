@@ -10,8 +10,7 @@ import * as o from '../../../../src/output/output_ast';
 import {ConstantPool} from '../../../constant_pool';
 import * as ir from '../ir';
 
-import {CompilationJobKind as Kind, type ComponentCompilationJob, type HostBindingCompilationJob, type ViewCompilationUnit, CompilationJob} from './compilation';
-
+import {CompilationJob, CompilationJobKind as Kind, type ComponentCompilationJob, type HostBindingCompilationJob, type ViewCompilationUnit} from './compilation';
 import {phaseAlignPipeVariadicVarOffset} from './phases/align_pipe_variadic_var_offset';
 import {phaseFindAnyCasts} from './phases/any_cast';
 import {phaseAttributeExtraction} from './phases/attribute_extraction';
@@ -35,10 +34,10 @@ import {phaseNgContainer} from './phases/ng_container';
 import {phaseNoListenersOnTemplates} from './phases/no_listeners_on_templates';
 import {phaseNonbindable} from './phases/nonbindable';
 import {phaseNullishCoalescing} from './phases/nullish_coalescing';
+import {phaseOrdering} from './phases/ordering';
 import {phaseParseExtractedStyles} from './phases/parse_extracted_styles';
 import {phasePipeCreation} from './phases/pipe_creation';
 import {phasePipeVariadic} from './phases/pipe_variadic';
-import {phaseOrdering} from './phases/ordering';
 import {phasePureFunctionExtraction} from './phases/pure_function_extraction';
 import {phasePureLiteralStructures} from './phases/pure_literal_structures';
 import {phaseReify} from './phases/reify';
@@ -49,6 +48,7 @@ import {phaseResolveI18nPlaceholders} from './phases/resolve_i18n_placeholders';
 import {phaseResolveNames} from './phases/resolve_names';
 import {phaseResolveSanitizers} from './phases/resolve_sanitizers';
 import {phaseSaveRestoreView} from './phases/save_restore_view';
+import {phaseSignalBindings} from './phases/signal_bindings';
 import {phaseSlotAllocation} from './phases/slot_allocation';
 import {phaseStyleBindingSpecialization} from './phases/style_binding_specialization';
 import {phaseTemporaryVariables} from './phases/temporary_variables';
@@ -72,6 +72,7 @@ const phases: Phase[] = [
   {kind: Kind.Host, fn: phaseHostStylePropertyParsing},
   {kind: Kind.Tmpl, fn: phaseNamespace},
   {kind: Kind.Both, fn: phaseStyleBindingSpecialization},
+  {kind: Kind.Both, fn: phaseSignalBindings},
   {kind: Kind.Both, fn: phaseBindingSpecialization},
   {kind: Kind.Both, fn: phaseAttributeExtraction},
   {kind: Kind.Both, fn: phaseParseExtractedStyles},
