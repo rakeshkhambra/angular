@@ -94,6 +94,7 @@ export {
   ɵɵpropertyInterpolateV,
 
   ɵɵreference,
+  ɵɵshallowReference,
 
   ɵɵrepeater, 
   ɵɵrepeaterCreate, 
